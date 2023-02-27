@@ -8,7 +8,7 @@ type Song struct {
 	Duration time.Duration
 }
 
-func CreateSong(name, author string, duration time.Duration) *Song {
+func NewSong(name, author string, duration time.Duration) *Song {
 	return &Song {
 		Name:     name,
 		Author:   author,

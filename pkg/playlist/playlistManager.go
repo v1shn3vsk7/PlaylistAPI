@@ -1,10 +1,12 @@
 package playlist
 
+import "github.com/v1shn3vsk7/PlaylistAPI/pkg/song"
+
 type PlaylistManager interface {
-	Init()
-	Play()    error
-	Pause()   error
-	AddSong()
-	Next()    error
-	Prev()    error
+	New()                     *Playlist
+	Play()                    error
+	Pause()                   error
+	AddSong(song *song.Song)
+	Next()                    error
+	Prev()                    error
 }

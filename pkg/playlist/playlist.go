@@ -1,7 +1,6 @@
 package playlist
 
 import (
-	"container/list"
 	"errors"
 	"github.com/v1shn3vsk7/PlaylistAPI/pkg/song"
 	"log"
@@ -9,172 +8,142 @@ import (
 	"time"
 )
 
-type Playlist struct {
-	Songs     *list.List
-	CurrSong  *song.Song
-	NextSong  *list.Element
-	PrevSong  *list.Element
-	IsPlaying  bool
-	mu         sync.Mutex
-	timePlayed time.Duration
+type Node struct {
+	Song *song.Song
+	Next *Node
+	Prev *Node
 }
 
-func Init() *Playlist {
-	return &Playlist{
-		Songs: list.New(),
-	}
+type Playlist struct {
+	mu         sync.Mutex
+	currSong   *Node
+	front      *Node
+	back       *Node
+	isPlaying  bool
+	timePlayed time.Duration //change to time.Time
+	startTime  time.Time
+}
+
+func New() *Playlist {
+	return &Playlist{}
 }
 
 func (p *Playlist) Play() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if p.IsPlaying {
+	if p.isPlaying {
 		return errors.New("already playing")
 	}
-
-	if p.Songs.Len() == 0 {
+	if p.front == nil {
 		return errors.New("playlist is empty")
 	}
 
-	p.IsPlaying = true
-	if p.CurrSong == nil {
-		front := p.Songs.Front()
-		p.CurrSong = front.Value.(*song.Song)
-
-		p.PrevSong = front.Prev()
-		p.NextSong = front.Next()
-	}
-
 	if p.timePlayed == 0 {
-		log.Printf("Playing song: %s by %s, Duration: %s\n",
-			p.CurrSong.Name,
-			p.CurrSong.Author,
-			p.CurrSong.Duration.String())
+		log.Printf("Playing song: %s by %s, duration: %s\n",
+			p.currSong.Song.Name,
+			p.currSong.Song.Author,
+			p.currSong.Song.Duration.String()) //Minutes()
 	} else {
-		log.Printf("Resuming playback of song: %s by %s, Duration: %s\n",
-			p.CurrSong.Name,
-			p.CurrSong.Author,
-			p.CurrSong.Duration-p.timePlayed)
+		log.Printf("Resuming playback of song: %s by %s, duration: %s\n",
+			p.currSong.Song.Name,
+			p.currSong.Song.Author,
+			p.currSong.Song.Duration - p.timePlayed)
 	}
+
+	p.isPlaying = true
+	p.startTime = time.Now()
 
 	go func() {
-		time.Sleep(p.CurrSong.Duration - p.timePlayed)
+		time.Sleep(p.currSong.Song.Duration - p.timePlayed)
 
-		p.mu.Lock()
-		defer p.mu.Unlock()
-
-		p.IsPlaying = false
 		p.timePlayed = 0
 
-		if p.NextSong != nil {
-			p.CurrSong = p.NextSong.Value.(*song.Song)
-			p.NextSong = p.NextSong.Next()
-			go p.Play()
-		} else {
-			log.Println("End of playlist")
-		}
+		p.Next()
 	}()
 
 	return nil
 }
 
 func (p *Playlist) Pause() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if !p.IsPlaying {
+	if !p.isPlaying {
 		return errors.New("already paused")
 	}
 
-	p.IsPlaying = false
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	log.Printf("Paused playback of song: %s by %s, Duration: %s\n",
-		p.CurrSong.Name,
-		p.CurrSong.Author,
-		p.CurrSong.Duration-p.timePlayed)
+	log.Printf("paused playback\n")
 
-	remainingTime := p.CurrSong.Duration - p.timePlayed
-	p.timePlayed = 0
-
-	go func() {
-		time.Sleep(remainingTime)
-
-		p.mu.Lock()
-		defer p.mu.Unlock()
-
-		if p.IsPlaying {
-			return
-		}
-
-		p.IsPlaying = true
-		p.timePlayed = 0
-		go p.Play()
-	}()
+	p.timePlayed += time.Since(p.startTime)
+	p.isPlaying = false
 
 	return nil
 }
 
-func (p *Playlist) AddSongs(songs ...*song.Song) {
+func (p *Playlist) AddSong(song *song.Song) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	for _, s := range songs {
-		p.Songs.PushBack(s)
-	}
+	el := &Node {Song: song}
 
-	if p.CurrSong == nil {
-		p.CurrSong = songs[0]
+	if p.front == nil {
+		p.front, p.back, p.currSong = el, el, el
+	} else {
+		p.back.Next, el.Prev, p.back = el, p.back, el
 	}
 }
 
 func (p *Playlist) Next() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.Songs.Len() == 0 {
+	if p.front == nil {
 		return errors.New("playlist is empty")
 	}
-
-	if p.CurrSong == nil {
-		p.CurrSong = p.Songs.Front().Value.(*song.Song)
-	}
-
-	if p.NextSong == nil {
-		p.NextSong = p.Songs.Front()
-	}
-
 	if err := p.Pause(); err != nil {
 		return err
 	}
 
-	p.CurrSong = p.NextSong.Value.(*song.Song)
+	p.mu.Lock()
 
-	go p.Play()
+	p.timePlayed = 0
+
+	if p.currSong.Next != nil {
+		p.currSong = p.currSong.Next
+	} else {
+		p.currSong = p.front
+	}
+
+	p.mu.Unlock()
+
+	if err := p.Play(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 func (p *Playlist) Prev() error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if p.Songs.Len() == 0 {
+	if p.back == nil {
 		return errors.New("playlist is empty")
 	}
-
-	if p.CurrSong == nil {
-		p.CurrSong = p.Songs.Back().Value.(*song.Song)
-		return nil
+	if err := p.Pause(); err != nil {
+		return err
 	}
 
-	if p.PrevSong == nil {
-		p.CurrSong = p.Songs.Back().Value.(*song.Song)
+	p.mu.Lock()
+
+	p.timePlayed = 0
+
+	if p.currSong.Prev != nil {
+		p.currSong = p.currSong.Prev
+	} else {
+		p.currSong = p.back
 	}
 
-	p.CurrSong = p.PrevSong.Value.(*song.Song)
+	p.mu.Unlock()
 
-	go p.Play()
+	if err := p.Play(); err != nil {
+		return err
+	}
 
 	return nil
 }
