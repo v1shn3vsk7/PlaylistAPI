@@ -42,12 +42,12 @@ func (p *Playlist) Play() error {
 	if p.timePlayed == 0 {
 		log.Printf("Playing song: %s by %s, duration: %s\n",
 			p.currSong.Song.Name,
-			p.currSong.Song.Author,
+			p.currSong.Song.Artist,
 			p.currSong.Song.Duration.String()) //Minutes()
 	} else {
 		log.Printf("Resuming playback of song: %s by %s, duration: %s\n",
 			p.currSong.Song.Name,
-			p.currSong.Song.Author,
+			p.currSong.Song.Artist,
 			p.currSong.Song.Duration - p.timePlayed)
 	}
 
