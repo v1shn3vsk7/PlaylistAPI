@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"database/sql"
+	"errors"
 	_ "github.com/lib/pq"
 	"github.com/v1shn3vsk7/PlaylistAPI/pkg/song"
 )
@@ -44,6 +45,9 @@ func GetSongs(db *sql.DB) ([]song.Song, error) {
 }
 
 func AddSong(db *sql.DB, song *song.Song) error {
+	if db == nil {
+		return errors.New("db connections is nil")
+	}
 	if  _ ,err := db.Query("INSERT INTO songs (name, artist, duration) VALUES ($1, $2, $3)",
 		song.Name, song.Artist, song.Duration); err != nil {
 		return err
