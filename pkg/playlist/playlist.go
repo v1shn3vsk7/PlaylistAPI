@@ -92,6 +92,8 @@ func (p *Playlist) AddSong(song *song.Song) {
 	} else {
 		p.back.Next, el.Prev, p.back = el, p.back, el
 	}
+
+	log.Println("successfully added $1 $2 song", song.Name, song.Artist)
 }
 
 func (p *Playlist) Next() error {

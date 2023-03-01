@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS songs (
     id SERIAL PRIMARY KEY NOT NULL,
     name VARCHAR(255) NOT NULL,
-    duration INTERVAL NOT NULL
+    artist VARCHAR(255) NOT NULL,
+    duration TIME NOT NULL
 );

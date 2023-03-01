@@ -9,7 +9,7 @@ import "google/protobuf/empty.proto";
 message AddRequest {
   string name    = 1;
   string artist  = 2;
-  int32 duration = 3;
+  string duration = 3;
 }
 
 message EditRequest {
@@ -17,7 +17,7 @@ message EditRequest {
   string prev_artist  = 2;
   string new_name     = 3;
   string new_artist   = 4;
-  int32  new_duration = 5;
+  string new_duration = 5;
 }
 
 message DeleteRequest {
