@@ -53,7 +53,7 @@ func Start() error {
 
 	p := playlist.New()
 	for _, s := range songs {
-		p.AddSong(&s)
+		p.AddSong(s)
 	}
 
 	s := newServer(p, grpcServer, db)
@@ -66,7 +66,7 @@ func Start() error {
 
 
 func (s *Server) serve(playlist *playlist.Playlist, lis *net.Listener) error {
-	pb.RegisterPlayerServer(s.server, &Server{ playlist: playlist, db: s.db})
+	pb.RegisterPlayerServer(s.server, &Server{playlist: playlist, db: s.db})
 	if err := s.server.Serve(*lis); err != nil {
 		return err
 	}

@@ -20,17 +20,17 @@ func NewDb(url string) (*sql.DB, error) {
 	return db, nil
 }
 
-func GetSongs(db *sql.DB) ([]song.Song, error) {
-	rows, err := db.Query("SELECT name, artist, duration FROM songs")
+func GetSongs(db *sql.DB) ([]*song.Song, error) {
+	rows, err := db.Query("SELECT name, artist, duration FROM songs ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var songs []song.Song
+	var songs []*song.Song
 
 	for rows.Next() {
-		var song song.Song
+		var song =  &song.Song{}
 		if err := rows.Scan(&song.Name, &song.Artist,
 			&song.Duration); err != nil {
 			return nil, err

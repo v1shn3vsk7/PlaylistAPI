@@ -17,10 +17,10 @@ type Node struct {
 type Playlist struct {
 	mu         sync.Mutex
 	currSong   *Node
-	front      *Node
+	head       *Node
 	back       *Node
 	IsPlaying  bool
-	timePlayed time.Duration //change to time.Time
+	timePlayed time.Duration
 	startTime  time.Time
 }
 
@@ -35,7 +35,7 @@ func (p *Playlist) Play() error {
 	if p.IsPlaying {
 		return errors.New("already playing")
 	}
-	if p.front == nil {
+	if p.head == nil {
 		return errors.New("playlist is empty")
 	}
 
@@ -87,15 +87,15 @@ func (p *Playlist) AddSong(song *song.Song) {
 
 	el := &Node {Song: song}
 
-	if p.front == nil {
-		p.front, p.back, p.currSong = el, el, el
+	if p.head == nil {
+		p.head, p.back, p.currSong = el, el, el
 	} else {
 		p.back.Next, el.Prev, p.back = el, p.back, el
 	}
 }
 
 func (p *Playlist) Next() error {
-	if p.front == nil {
+	if p.head == nil {
 		return errors.New("playlist is empty")
 	}
 	if err := p.Pause(); err != nil {
@@ -109,7 +109,7 @@ func (p *Playlist) Next() error {
 	if p.currSong.Next != nil {
 		p.currSong = p.currSong.Next
 	} else {
-		p.currSong = p.front
+		p.currSong = p.head
 	}
 
 	p.mu.Unlock()
@@ -152,27 +152,27 @@ func (p *Playlist) Delete(song *song.Song) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if p.front == p.back {
-		p.front, p.back, p.currSong = nil, nil, nil
+	if p.head == p.back {
+		p.head, p.back, p.currSong = nil, nil, nil
 	}
 
-	node := p.front
+	node := p.head
 
 	for node != nil {
 		if node.Song.Name == song.Name &&
 			node.Song.Artist == song.Artist {
-				if node.Next == nil {
-					node.Next = p.front
-				} else {
-					node.Prev.Next = node.Next
-				}
-				if node.Prev == nil {
-					node.Prev = p.back
-				} else {
-					node.Next.Prev = node.Prev
-				}
+			if node.Prev == nil {
+				p.head = node.Next
+			} else {
+				node.Prev.Next = node.Next
+			}
+			if node.Next == nil {
+				p.back = node.Prev
+			} else {
+				node.Next.Prev = node.Prev
+			}
 
-				return
+			return
 		}
 		node = node.Next
 	}
