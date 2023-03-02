@@ -172,6 +172,15 @@ func (p *Playlist) Delete(song *song.Song) {
 				node.Next.Prev = node.Prev
 			}
 
+			if p.currSong.Song.Name == song.Name &&
+				p.currSong.Song.Artist == song.Artist {
+				if node.Next != nil {
+					p.currSong = node.Next
+				} else {
+					p.currSong = p.head
+				}
+			}
+
 			return
 		}
 		node = node.Next
