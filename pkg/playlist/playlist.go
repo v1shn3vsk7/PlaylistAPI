@@ -19,7 +19,7 @@ type Playlist struct {
 	currSong   *Node
 	front      *Node
 	back       *Node
-	isPlaying  bool
+	IsPlaying  bool
 	timePlayed time.Duration //change to time.Time
 	startTime  time.Time
 }
@@ -32,7 +32,7 @@ func (p *Playlist) Play() error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	if p.isPlaying {
+	if p.IsPlaying {
 		return errors.New("already playing")
 	}
 	if p.front == nil {
@@ -51,7 +51,7 @@ func (p *Playlist) Play() error {
 			p.currSong.Song.Duration - p.timePlayed)
 	}
 
-	p.isPlaying = true
+	p.IsPlaying = true
 	p.startTime = time.Now()
 
 	go func() {
@@ -66,7 +66,7 @@ func (p *Playlist) Play() error {
 }
 
 func (p *Playlist) Pause() error {
-	if !p.isPlaying {
+	if !p.IsPlaying {
 		return errors.New("already paused")
 	}
 
@@ -76,7 +76,7 @@ func (p *Playlist) Pause() error {
 	log.Printf("paused playback\n")
 
 	p.timePlayed += time.Since(p.startTime)
-	p.isPlaying = false
+	p.IsPlaying = false
 
 	return nil
 }
@@ -146,4 +146,38 @@ func (p *Playlist) Prev() error {
 	}
 
 	return nil
+}
+
+func (p *Playlist) Delete(song *song.Song) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.front == p.back {
+		p.front, p.back, p.currSong = nil, nil, nil
+	}
+
+	node := p.front
+
+	for node != nil {
+		if node.Song.Name == song.Name &&
+			node.Song.Artist == song.Artist {
+				if node.Next == nil {
+					node.Next = p.front
+				} else {
+					node.Prev.Next = node.Next
+				}
+				if node.Prev == nil {
+					node.Prev = p.back
+				} else {
+					node.Next.Prev = node.Prev
+				}
+
+				return
+		}
+		node = node.Next
+	}
+}
+
+func (p *Playlist) GetCurrentSong() *song.Song {
+	return p.currSong.Song
 }

@@ -168,5 +168,7 @@ func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response
 		return &pb.Response{}, err
 	}
 
+	s.playlist.Delete(song)
+
 	return &pb.Response{Result: ""}, nil
 }
