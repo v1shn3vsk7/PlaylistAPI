@@ -16,9 +16,9 @@ type Node struct {
 
 type Playlist struct {
 	mu         sync.Mutex
-	currSong   *Node
-	front      *Node
-	back       *Node
+	currSong *Node
+	front    *Node
+	back     *Node
 	isPlaying  bool
 	timePlayed time.Duration //change to time.Time
 	startTime  time.Time

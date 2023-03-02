@@ -130,10 +130,43 @@ func (s *Server) Add(ctx context.Context, in *pb.AddRequest) (*pb.Response, erro
 }
 
 func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, error) {
+	dur, err := utils.ParseDuration(in.NewDuration)
+	if err != nil {
+		err = status.Error(codes.FailedPrecondition, err.Error())
+		return &pb.Response{}, err
+	}
+
+	prevSong := &song.Song{
+		Name:     in.PrevName,
+		Artist:   in.PrevArtist,
+	}
+	newSong := &song.Song{
+		Name:     in.NewName,
+		Artist:   in.NewArtist,
+		Duration: dur,
+	}
+
+	id, err := postgres.FindSong(s.db, prevSong)
+	if err != nil {
+		err = status.Error(codes.FailedPrecondition, err.Error())
+		return &pb.Response{}, err
+	}
+
+	postgres.EditSong(s.db, newSong, id)
+
 	return &pb.Response{Result: ""}, nil
 }
 
 func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response, error) {
+	song := &song.Song{
+		Name:     in.Name,
+		Artist:   in.Artist,
+	}
+
+	if err := postgres.DeleteSong(s.db, song); err != nil {
+		err = status.Error(codes.FailedPrecondition, err.Error())
+		return &pb.Response{}, err
+	}
+
 	return &pb.Response{Result: ""}, nil
 }
-

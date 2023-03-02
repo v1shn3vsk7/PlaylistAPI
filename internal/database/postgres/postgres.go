@@ -55,3 +55,28 @@ func AddSong(db *sql.DB, song *song.Song) error {
 
 	return nil
 }
+
+func FindSong(db *sql.DB, song *song.Song) (int, error) {
+	var id int
+
+	if err := db.QueryRow("SELECT FROM songs WHERE name = $1, artist = $2 RETURNING id",
+		song.Name, song.Artist).Scan(&id); err != nil {
+		return 0, nil
+	}
+
+	return id, nil
+}
+
+func EditSong(db *sql.DB, song *song.Song, id int) {
+	db.QueryRow("UPDATE songs SET name = $1, artist = $2, duration = $3 WHERE id = $4",
+		song.Name, song.Artist, song.Duration, id)
+}
+
+func DeleteSong(db *sql.DB, song *song.Song) error {
+	if _, err := db.Query("DELETE FROM songs WHERE name = $1, artist = $2",
+		song.Name, song.Artist); err != nil {
+		return err
+	}
+
+	return nil
+}
