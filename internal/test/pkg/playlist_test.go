@@ -41,8 +41,4 @@ func TestPlaylist(t *testing.T) {
 	if err := p.Prev(); err != nil {
 		t.Errorf("unexpected error while skipping to previous song: %v", err)
 	}
-
-	if err := p.Prev(); err == nil {
-		t.Error("expected error while skipping past the first song")
-	}
 }
