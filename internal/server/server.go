@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"log"
 	"net"
 	"os"
 )
@@ -24,7 +25,7 @@ type Server struct {
 	pb.UnimplementedPlayerServer
 }
 
-func newServer(playlist *playlist.Playlist, server *grpc.Server, db *sql.DB) *Server {
+func NewServer(playlist *playlist.Playlist, server *grpc.Server, db *sql.DB) *Server {
 	return &Server{
 		playlist: playlist,
 		server:   server,
@@ -53,10 +54,11 @@ func Start() error {
 
 	p := playlist.New()
 	for _, s := range songs {
+		log.Printf("Loaded '%s' by '%s' from db\n", s.Name, s.Artist)
 		p.AddSong(s)
 	}
 
-	s := newServer(p, grpcServer, db)
+	s := NewServer(p, grpcServer, db)
 	if err := s.serve(p, &listener); err != nil {
 		return err
 	}
@@ -110,7 +112,7 @@ func (s *Server) Prev(ctx context.Context, in *emptypb.Empty) (*pb.Response, err
 func (s *Server) Add(ctx context.Context, in *pb.AddRequest) (*pb.Response, error) {
 	dur, err := utils.ParseDuration(in.Duration)
 	if err != nil {
-		err = status.Error(codes.FailedPrecondition, err.Error())
+		err = status.Error(codes.Internal, err.Error())
 		return &pb.Response{}, err
 	}
 
@@ -121,7 +123,7 @@ func (s *Server) Add(ctx context.Context, in *pb.AddRequest) (*pb.Response, erro
 	}
 
 	if err := postgres.AddSong(s.db, newSong); err != nil {
-		err = status.Error(codes.FailedPrecondition, err.Error())
+		err = status.Error(codes.InvalidArgument, err.Error())
 		return &pb.Response{}, err
 	}
 	s.playlist.AddSong(newSong)
@@ -132,7 +134,7 @@ func (s *Server) Add(ctx context.Context, in *pb.AddRequest) (*pb.Response, erro
 func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, error) {
 	dur, err := utils.ParseDuration(in.NewDuration)
 	if err != nil {
-		err = status.Error(codes.FailedPrecondition, err.Error())
+		err = status.Error(codes.Internal, err.Error())
 		return &pb.Response{}, err
 	}
 
@@ -148,14 +150,14 @@ func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, er
 
 	id, err := postgres.FindSong(s.db, prevSong)
 	if err != nil {
-		err = status.Error(codes.FailedPrecondition, err.Error())
+		err = status.Error(codes.InvalidArgument, err.Error())
 		return &pb.Response{}, err
 	}
 
 	postgres.EditSong(s.db, newSong, id)
 	s.playlist.Edit(prevSong, newSong)
 
-	return &pb.Response{Result: ""}, nil
+	return &pb.Response{Result: "Successfully edited song"}, nil
 }
 
 func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response, error) {
@@ -165,11 +167,12 @@ func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response
 	}
 
 	if err := postgres.DeleteSong(s.db, song); err != nil {
-		err = status.Error(codes.FailedPrecondition, err.Error())
+		err = status.Error(codes.InvalidArgument, err.Error())
 		return &pb.Response{}, err
 	}
 
 	s.playlist.Delete(song)
 
-	return &pb.Response{Result: ""}, nil
+	return &pb.Response{Result: fmt.Sprintf("Song '%s' by '%s' was deleted",
+		song.Name, song.Artist)}, nil
 }
