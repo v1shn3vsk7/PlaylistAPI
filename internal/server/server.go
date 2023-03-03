@@ -142,6 +142,12 @@ func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, er
 		Name:     in.PrevName,
 		Artist:   in.PrevArtist,
 	}
+
+	if s.playlist.IsPlaying && s.playlist.IsCurrentSong(prevSong) {
+		err := status.Error(codes.InvalidArgument, "Can not delete playing song")
+		return &pb.Response{}, err
+	}
+
 	newSong := &song.Song{
 		Name:     in.NewName,
 		Artist:   in.NewArtist,
@@ -164,6 +170,11 @@ func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response
 	song := &song.Song{
 		Name:     in.Name,
 		Artist:   in.Artist,
+	}
+
+	if s.playlist.IsPlaying && s.playlist.IsCurrentSong(song) {
+		err := status.Error(codes.InvalidArgument, "Can not delete playing song")
+		return &pb.Response{}, err
 	}
 
 	if err := postgres.DeleteSong(s.db, song); err != nil {

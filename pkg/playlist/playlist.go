@@ -85,12 +85,14 @@ func (p *Playlist) AddSong(song *Song) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	el := &Node {Song: song}
+	newNode := &Node {Song: song}
 
 	if p.head == nil {
-		p.head, p.back, p.currSong = el, el, el
+		p.head, p.back, p.currSong = newNode, newNode, newNode
 	} else {
-		p.back.Next, el.Prev, p.back = el, p.back, el
+		p.back.Next = newNode
+		newNode.Prev = p.back
+		p.back = newNode
 	}
 }
 
@@ -203,4 +205,13 @@ func (p *Playlist) Edit(prevSong, newSong *Song) {
 
 func (p *Playlist) GetCurrentSong() *Song {
 	return p.currSong.Song
+}
+
+func (p *Playlist) IsCurrentSong(song *Song) bool {
+	if song.Name == p.currSong.Song.Name &&
+		song.Artist == p.currSong.Song.Artist {
+		return true
+	}
+
+	return false
 }
