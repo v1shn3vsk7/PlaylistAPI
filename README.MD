@@ -7,9 +7,6 @@
 `cd internal/test/pkg`
 
 `go test ./... -v`
-### Для тестирования сервера
-`cd internal/test/internal`
-` `
 
 ## Запросы (gRPC):
 ### Начать воспроизведение:

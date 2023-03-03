@@ -2,14 +2,14 @@ package playlist
 
 import (
 	"errors"
-	"github.com/v1shn3vsk7/PlaylistAPI/pkg/song"
+	. "github.com/v1shn3vsk7/PlaylistAPI/pkg/song"
 	"log"
 	"sync"
 	"time"
 )
 
 type Node struct {
-	Song *song.Song
+	Song *Song
 	Next *Node
 	Prev *Node
 }
@@ -81,7 +81,7 @@ func (p *Playlist) Pause() error {
 	return nil
 }
 
-func (p *Playlist) AddSong(song *song.Song) {
+func (p *Playlist) AddSong(song *Song) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -148,7 +148,7 @@ func (p *Playlist) Prev() error {
 	return nil
 }
 
-func (p *Playlist) Delete(song *song.Song) {
+func (p *Playlist) Delete(song *Song) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -187,7 +187,7 @@ func (p *Playlist) Delete(song *song.Song) {
 	}
 }
 
-func (p *Playlist) Edit(prevSong, newSong *song.Song) {
+func (p *Playlist) Edit(prevSong, newSong *Song) {
 	 node := p.head
 
 	 for node != nil {
@@ -201,6 +201,6 @@ func (p *Playlist) Edit(prevSong, newSong *song.Song) {
 	 }
 }
 
-func (p *Playlist) GetCurrentSong() *song.Song {
+func (p *Playlist) GetCurrentSong() *Song {
 	return p.currSong.Song
 }

@@ -25,7 +25,7 @@ type Server struct {
 	pb.UnimplementedPlayerServer
 }
 
-func NewServer(playlist *playlist.Playlist, server *grpc.Server, db *sql.DB) *Server {
+func newServer(playlist *playlist.Playlist, server *grpc.Server, db *sql.DB) *Server {
 	return &Server{
 		playlist: playlist,
 		server:   server,
@@ -58,7 +58,7 @@ func Start() error {
 		p.AddSong(s)
 	}
 
-	s := NewServer(p, grpcServer, db)
+	s := newServer(p, grpcServer, db)
 	if err := s.serve(p, &listener); err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (s *Server) Add(ctx context.Context, in *pb.AddRequest) (*pb.Response, erro
 	}
 
 	if err := postgres.AddSong(s.db, newSong); err != nil {
-		err = status.Error(codes.InvalidArgument, err.Error())
+		err = status.Error(codes.NotFound, err.Error())
 		return &pb.Response{}, err
 	}
 	s.playlist.AddSong(newSong)
@@ -150,7 +150,7 @@ func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, er
 
 	id, err := postgres.FindSong(s.db, prevSong)
 	if err != nil {
-		err = status.Error(codes.InvalidArgument, err.Error())
+		err = status.Error(codes.NotFound, err.Error())
 		return &pb.Response{}, err
 	}
 
@@ -167,7 +167,7 @@ func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response
 	}
 
 	if err := postgres.DeleteSong(s.db, song); err != nil {
-		err = status.Error(codes.InvalidArgument, err.Error())
+		err = status.Error(codes.NotFound, err.Error())
 		return &pb.Response{}, err
 	}
 
