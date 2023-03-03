@@ -187,6 +187,20 @@ func (p *Playlist) Delete(song *song.Song) {
 	}
 }
 
+func (p *Playlist) Edit(prevSong, newSong *song.Song) {
+	 node := p.head
+
+	 for node != nil {
+		 if node.Song.Name == prevSong.Name &&
+			 node.Song.Artist == prevSong.Artist {
+			 node.Song = newSong
+			 return
+		 }
+
+		 node = node.Next
+	 }
+}
+
 func (p *Playlist) GetCurrentSong() *song.Song {
 	return p.currSong.Song
 }

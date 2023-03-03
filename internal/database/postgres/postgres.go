@@ -59,7 +59,7 @@ func AddSong(db *sql.DB, song *song.Song) error {
 func FindSong(db *sql.DB, song *song.Song) (int, error) {
 	var id int
 
-	if err := db.QueryRow("SELECT FROM songs WHERE name = $1 AND artist = $2 RETURNING id",
+	if err := db.QueryRow("SELECT id FROM songs WHERE name = $1 AND artist = $2",
 		song.Name, song.Artist).Scan(&id); err != nil {
 		return 0, nil
 	}

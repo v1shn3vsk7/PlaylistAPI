@@ -153,6 +153,7 @@ func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, er
 	}
 
 	postgres.EditSong(s.db, newSong, id)
+	s.playlist.Edit(prevSong, newSong)
 
 	return &pb.Response{Result: ""}, nil
 }
