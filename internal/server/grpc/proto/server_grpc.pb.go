@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.21.12
-// source: server.proto
+// source: internal/server/grpc/proto/server.proto
 
-package proto
+package server_proto
 
 import (
 	context "context"
@@ -30,6 +30,7 @@ type PlayerClient interface {
 	Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*Response, error)
 	Edit(ctx context.Context, in *EditRequest, opts ...grpc.CallOption) (*Response, error)
 	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*Response, error)
+	Status(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Response, error)
 }
 
 type playerClient struct {
@@ -103,6 +104,15 @@ func (c *playerClient) Delete(ctx context.Context, in *DeleteRequest, opts ...gr
 	return out, nil
 }
 
+func (c *playerClient) Status(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*Response, error) {
+	out := new(Response)
+	err := c.cc.Invoke(ctx, "/grpc.Player/Status", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PlayerServer is the server API for Player service.
 // All implementations must embed UnimplementedPlayerServer
 // for forward compatibility
@@ -114,6 +124,7 @@ type PlayerServer interface {
 	Add(context.Context, *AddRequest) (*Response, error)
 	Edit(context.Context, *EditRequest) (*Response, error)
 	Delete(context.Context, *DeleteRequest) (*Response, error)
+	Status(context.Context, *emptypb.Empty) (*Response, error)
 	mustEmbedUnimplementedPlayerServer()
 }
 
@@ -141,6 +152,9 @@ func (UnimplementedPlayerServer) Edit(context.Context, *EditRequest) (*Response,
 }
 func (UnimplementedPlayerServer) Delete(context.Context, *DeleteRequest) (*Response, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedPlayerServer) Status(context.Context, *emptypb.Empty) (*Response, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Status not implemented")
 }
 func (UnimplementedPlayerServer) mustEmbedUnimplementedPlayerServer() {}
 
@@ -281,6 +295,24 @@ func _Player_Delete_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Player_Status_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PlayerServer).Status(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpc.Player/Status",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PlayerServer).Status(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Player_ServiceDesc is the grpc.ServiceDesc for Player service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -316,7 +348,11 @@ var Player_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "Delete",
 			Handler:    _Player_Delete_Handler,
 		},
+		{
+			MethodName: "Status",
+			Handler:    _Player_Status_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "server.proto",
+	Metadata: "internal/server/grpc/proto/server.proto",
 }

@@ -2,6 +2,7 @@ package playlist
 
 import (
 	"errors"
+	"fmt"
 	. "github.com/v1shn3vsk7/PlaylistAPI/pkg/song"
 	"log"
 	"sync"
@@ -48,7 +49,7 @@ func (p *Playlist) Play() error {
 		log.Printf("Resuming playback of song: %s by %s, duration: %s\n",
 			p.currSong.Song.Name,
 			p.currSong.Song.Artist,
-			p.currSong.Song.Duration - p.timePlayed)
+			p.currSong.Song.Duration-p.timePlayed)
 	}
 
 	p.IsPlaying = true
@@ -85,7 +86,7 @@ func (p *Playlist) AddSong(song *Song) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	newNode := &Node {Song: song}
+	newNode := &Node{Song: song}
 
 	if p.head == nil {
 		p.head, p.back, p.currSong = newNode, newNode, newNode
@@ -190,28 +191,41 @@ func (p *Playlist) Delete(song *Song) {
 }
 
 func (p *Playlist) Edit(prevSong, newSong *Song) {
-	 node := p.head
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
-	 for node != nil {
-		 if node.Song.Name == prevSong.Name &&
-			 node.Song.Artist == prevSong.Artist {
-			 node.Song = newSong
-			 return
-		 }
+	node := p.head
 
-		 node = node.Next
-	 }
-}
+	for node != nil {
+		if node.Song.Name == prevSong.Name &&
+			node.Song.Artist == prevSong.Artist {
+			node.Song = newSong
+			return
+		}
 
-func (p *Playlist) GetCurrentSong() *Song {
-	return p.currSong.Song
+		node = node.Next
+	}
 }
 
 func (p *Playlist) IsCurrentSong(song *Song) bool {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	if song.Name == p.currSong.Song.Name &&
 		song.Artist == p.currSong.Song.Artist {
 		return true
 	}
 
 	return false
+}
+
+func (p *Playlist) Status() string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if !p.IsPlaying {
+		return "Not playing"
+	} else {
+		return fmt.Sprintf("Playing '%s' song by '%s' ", p.currSong.Song.Name, p.currSong.Song.Artist)
+	}
 }

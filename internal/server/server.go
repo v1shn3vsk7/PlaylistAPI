@@ -66,7 +66,6 @@ func Start() error {
 	return nil
 }
 
-
 func (s *Server) serve(playlist *playlist.Playlist, lis *net.Listener) error {
 	pb.RegisterPlayerServer(s.server, &Server{playlist: playlist, db: s.db})
 	if err := s.server.Serve(*lis); err != nil {
@@ -139,8 +138,8 @@ func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, er
 	}
 
 	prevSong := &song.Song{
-		Name:     in.PrevName,
-		Artist:   in.PrevArtist,
+		Name:   in.PrevName,
+		Artist: in.PrevArtist,
 	}
 
 	if s.playlist.IsPlaying && s.playlist.IsCurrentSong(prevSong) {
@@ -168,8 +167,8 @@ func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, er
 
 func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response, error) {
 	song := &song.Song{
-		Name:     in.Name,
-		Artist:   in.Artist,
+		Name:   in.Name,
+		Artist: in.Artist,
 	}
 
 	if s.playlist.IsPlaying && s.playlist.IsCurrentSong(song) {
@@ -186,4 +185,8 @@ func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response
 
 	return &pb.Response{Result: fmt.Sprintf("Song '%s' by '%s' was deleted",
 		song.Name, song.Artist)}, nil
+}
+
+func (s *Server) Status(ctx context.Context, in *emptypb.Empty) (*pb.Response, error) {
+	return &pb.Response{Result: s.playlist.Status()}, nil
 }

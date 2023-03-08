@@ -7,8 +7,8 @@ package grpc;
 import "google/protobuf/empty.proto";
 
 message AddRequest {
-  string name    = 1;
-  string artist  = 2;
+  string name     = 1;
+  string artist   = 2;
   string duration = 3;
 }
 
@@ -37,6 +37,7 @@ service Player {
   rpc Add(AddRequest)                returns(Response)  {}
   rpc Edit(EditRequest)              returns(Response)  {}
   rpc Delete(DeleteRequest)          returns(Response)  {}
+  rpc Status(google.protobuf.Empty)  returns(Response)  {}
 }
 
 
