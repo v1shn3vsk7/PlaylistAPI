@@ -40,17 +40,10 @@ func (p *Playlist) Play() error {
 		return errors.New("playlist is empty")
 	}
 
-	if p.timePlayed == 0 {
-		log.Printf("Playing song: %s by %s, duration: %s\n",
-			p.currSong.Song.Name,
-			p.currSong.Song.Artist,
-			p.currSong.Song.Duration.String()) //Minutes()
-	} else {
-		log.Printf("Resuming playback of song: %s by %s, duration: %s\n",
-			p.currSong.Song.Name,
-			p.currSong.Song.Artist,
-			p.currSong.Song.Duration-p.timePlayed)
-	}
+	log.Printf("Playing song: '%s' by '%s', duration: %s\n",
+		p.currSong.Song.Name,
+		p.currSong.Song.Artist,
+		p.currSong.Song.Duration-p.timePlayed.Truncate(time.Second))
 
 	p.IsPlaying = true
 	p.startTime = time.Now()
@@ -67,12 +60,12 @@ func (p *Playlist) Play() error {
 }
 
 func (p *Playlist) Pause() error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	if !p.IsPlaying {
 		return errors.New("already paused")
 	}
-
-	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	log.Printf("paused playback\n")
 
@@ -98,9 +91,14 @@ func (p *Playlist) AddSong(song *Song) {
 }
 
 func (p *Playlist) Next() error {
+	p.mu.Lock()
+
 	if p.head == nil {
 		return errors.New("playlist is empty")
 	}
+
+	p.mu.Unlock()
+
 	if err := p.Pause(); err != nil {
 		return err
 	}
@@ -125,9 +123,14 @@ func (p *Playlist) Next() error {
 }
 
 func (p *Playlist) Prev() error {
+	p.mu.Lock()
+
 	if p.back == nil {
 		return errors.New("playlist is empty")
 	}
+
+	p.mu.Unlock()
+
 	if err := p.Pause(); err != nil {
 		return err
 	}
@@ -226,6 +229,8 @@ func (p *Playlist) Status() string {
 	if !p.IsPlaying {
 		return "Not playing"
 	} else {
-		return fmt.Sprintf("Playing '%s' song by '%s' ", p.currSong.Song.Name, p.currSong.Song.Artist)
+		return fmt.Sprintf("Playing '%s' song by '%s'",
+			p.currSong.Song.Name,
+			p.currSong.Song.Artist)
 	}
 }
