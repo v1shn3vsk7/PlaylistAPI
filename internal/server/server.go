@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/v1shn3vsk7/PlaylistAPI/internal/database/postgres"
 	pb "github.com/v1shn3vsk7/PlaylistAPI/internal/server/grpc/proto"
-	"github.com/v1shn3vsk7/PlaylistAPI/internal/utils"
 	"github.com/v1shn3vsk7/PlaylistAPI/pkg/playlist"
 	"github.com/v1shn3vsk7/PlaylistAPI/pkg/song"
 	"google.golang.org/grpc"
@@ -16,6 +15,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 )
 
 type Server struct {
@@ -25,7 +25,7 @@ type Server struct {
 	pb.UnimplementedPlayerServer
 }
 
-func newServer(playlist *playlist.Playlist, server *grpc.Server, db *sql.DB) *Server {
+func NewServer(playlist *playlist.Playlist, server *grpc.Server, db *sql.DB) *Server {
 	return &Server{
 		playlist: playlist,
 		server:   server,
@@ -58,7 +58,7 @@ func Start() error {
 		p.AddSong(s)
 	}
 
-	s := newServer(p, grpcServer, db)
+	s := NewServer(p, grpcServer, db)
 	if err := s.serve(p, &listener); err != nil {
 		return err
 	}
@@ -109,20 +109,14 @@ func (s *Server) Prev(ctx context.Context, in *emptypb.Empty) (*pb.Response, err
 }
 
 func (s *Server) Add(ctx context.Context, in *pb.AddRequest) (*pb.Response, error) {
-	dur, err := utils.ParseDuration(in.Duration)
-	if err != nil {
-		err = status.Error(codes.Internal, err.Error())
-		return &pb.Response{}, err
-	}
-
 	newSong := &song.Song{
 		Name:     in.Name,
 		Artist:   in.Artist,
-		Duration: dur,
+		Duration: time.Duration(in.Duration) * time.Second,
 	}
 
 	if err := postgres.AddSong(s.db, newSong); err != nil {
-		err = status.Error(codes.NotFound, err.Error())
+		err = status.Error(codes.Internal, err.Error())
 		return &pb.Response{}, err
 	}
 	s.playlist.AddSong(newSong)
@@ -131,12 +125,6 @@ func (s *Server) Add(ctx context.Context, in *pb.AddRequest) (*pb.Response, erro
 }
 
 func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, error) {
-	dur, err := utils.ParseDuration(in.NewDuration)
-	if err != nil {
-		err = status.Error(codes.Internal, err.Error())
-		return &pb.Response{}, err
-	}
-
 	prevSong := &song.Song{
 		Name:   in.PrevName,
 		Artist: in.PrevArtist,
@@ -150,7 +138,7 @@ func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, er
 	newSong := &song.Song{
 		Name:     in.NewName,
 		Artist:   in.NewArtist,
-		Duration: dur,
+		Duration: time.Duration(in.NewDuration) * time.Second,
 	}
 
 	id, err := postgres.FindSong(s.db, prevSong)

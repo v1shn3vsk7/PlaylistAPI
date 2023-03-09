@@ -5,6 +5,7 @@ import (
 	"errors"
 	_ "github.com/lib/pq"
 	"github.com/v1shn3vsk7/PlaylistAPI/pkg/song"
+	"time"
 )
 
 func NewDb(url string) (*sql.DB, error) {
@@ -30,11 +31,12 @@ func GetSongs(db *sql.DB) ([]*song.Song, error) {
 	var songs []*song.Song
 
 	for rows.Next() {
-		var song =  &song.Song{}
+		var song = &song.Song{}
 		if err := rows.Scan(&song.Name, &song.Artist,
 			&song.Duration); err != nil {
 			return nil, err
 		}
+		song.Duration *= time.Second
 		songs = append(songs, song)
 	}
 	if err := rows.Err(); err != nil {
@@ -48,8 +50,8 @@ func AddSong(db *sql.DB, song *song.Song) error {
 	if db == nil {
 		return errors.New("db connections is nil")
 	}
-	if  _ ,err := db.Query("INSERT INTO songs (name, artist, duration) VALUES ($1, $2, $3)",
-		song.Name, song.Artist, song.Duration); err != nil {
+	if _, err := db.Query("INSERT INTO songs (name, artist, duration) VALUES ($1, $2, $3)",
+		song.Name, song.Artist, song.Duration.Seconds()); err != nil {
 		return err
 	}
 

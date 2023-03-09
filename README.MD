@@ -4,9 +4,13 @@
 
 ## Запуск тестов:
 ### Для тестирования плейлиста
-`cd internal/test/pkg`
+`docker build -t test-pkg -f internal/test/pkg/Dockerfile .`
 
-`go test ./... -v`
+`docker run --rm test-pkg go test ./internal/test/pkg -v`
+### Для тестирования сервера
+`docker build -t test-internal -f internal/test/internal/Dockerfile .`
+
+`docker run --rm test-internal go test ./internal/test/internal -v`
 
 ## Запросы (gRPC):
 ```

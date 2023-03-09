@@ -1,4 +1,4 @@
-package test
+package test_pkg
 
 import (
 	"github.com/v1shn3vsk7/PlaylistAPI/pkg/playlist"
