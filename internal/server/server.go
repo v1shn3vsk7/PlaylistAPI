@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"github.com/v1shn3vsk7/PlaylistAPI/internal/database/postgres"
 	pb "github.com/v1shn3vsk7/PlaylistAPI/internal/server/grpc/proto"
@@ -20,12 +19,12 @@ import (
 
 type Server struct {
 	playlist *playlist.Playlist
-	db       *sql.DB
+	db       *postgres.Postgres
 	server   *grpc.Server
 	pb.UnimplementedPlayerServer
 }
 
-func NewServer(playlist *playlist.Playlist, server *grpc.Server, db *sql.DB) *Server {
+func NewServer(playlist *playlist.Playlist, server *grpc.Server, db *postgres.Postgres) *Server {
 	return &Server{
 		playlist: playlist,
 		server:   server,
@@ -41,24 +40,24 @@ func Start() error {
 
 	grpcServer := grpc.NewServer()
 
-	db, err := postgres.NewDb(os.Getenv("DB_URL"))
+	postgres, err := postgres.NewDb(os.Getenv("DB_URL"))
 	if err != nil {
 		return err
 	}
-	defer db.Close()
-
-	songs, err := postgres.GetSongs(db)
-	if err != nil {
-		return err
-	}
+	defer postgres.Close()
 
 	p := playlist.New()
+
+	s := NewServer(p, grpcServer, postgres)
+
+	songs, err := s.db.GetSongs()
+	if err != nil {
+		return err
+	}
 	for _, s := range songs {
 		log.Printf("Loaded '%s' by '%s' from db\n", s.Name, s.Artist)
 		p.AddSong(s)
 	}
-
-	s := NewServer(p, grpcServer, db)
 	if err := s.serve(p, &listener); err != nil {
 		return err
 	}
@@ -115,7 +114,7 @@ func (s *Server) Add(ctx context.Context, in *pb.AddRequest) (*pb.Response, erro
 		Duration: time.Duration(in.Duration) * time.Second,
 	}
 
-	if err := postgres.AddSong(s.db, newSong); err != nil {
+	if err := s.db.AddSong(newSong); err != nil {
 		err = status.Error(codes.Internal, err.Error())
 		return &pb.Response{}, err
 	}
@@ -141,13 +140,13 @@ func (s *Server) Edit(ctx context.Context, in *pb.EditRequest) (*pb.Response, er
 		Duration: time.Duration(in.NewDuration) * time.Second,
 	}
 
-	id, err := postgres.FindSong(s.db, prevSong)
+	id, err := s.db.FindSong(prevSong)
 	if err != nil {
 		err = status.Error(codes.NotFound, err.Error())
 		return &pb.Response{}, err
 	}
 
-	postgres.EditSong(s.db, newSong, id)
+	s.db.EditSong(newSong, id)
 	s.playlist.Edit(prevSong, newSong)
 
 	return &pb.Response{Result: "Successfully edited song"}, nil
@@ -164,7 +163,7 @@ func (s *Server) Delete(ctx context.Context, in *pb.DeleteRequest) (*pb.Response
 		return &pb.Response{}, err
 	}
 
-	if err := postgres.DeleteSong(s.db, song); err != nil {
+	if err := s.db.DeleteSong(song); err != nil {
 		err = status.Error(codes.NotFound, err.Error())
 		return &pb.Response{}, err
 	}

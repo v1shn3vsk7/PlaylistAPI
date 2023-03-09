@@ -8,7 +8,11 @@ import (
 	"time"
 )
 
-func NewDb(url string) (*sql.DB, error) {
+type Postgres struct {
+	*sql.DB
+}
+
+func NewDb(url string) (*Postgres, error) {
 	db, err := sql.Open("postgres", url)
 	if err != nil {
 		return nil, err
@@ -18,10 +22,10 @@ func NewDb(url string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	return db, nil
+	return &Postgres{db}, nil
 }
 
-func GetSongs(db *sql.DB) ([]*song.Song, error) {
+func (db *Postgres) GetSongs() ([]*song.Song, error) {
 	rows, err := db.Query("SELECT name, artist, duration FROM songs ORDER BY id")
 	if err != nil {
 		return nil, err
@@ -46,7 +50,7 @@ func GetSongs(db *sql.DB) ([]*song.Song, error) {
 	return songs, nil
 }
 
-func AddSong(db *sql.DB, song *song.Song) error {
+func (db *Postgres) AddSong(song *song.Song) error {
 	if db == nil {
 		return errors.New("db connections is nil")
 	}
@@ -58,7 +62,7 @@ func AddSong(db *sql.DB, song *song.Song) error {
 	return nil
 }
 
-func FindSong(db *sql.DB, song *song.Song) (int, error) {
+func (db *Postgres) FindSong(song *song.Song) (int, error) {
 	var id int
 
 	if err := db.QueryRow("SELECT id FROM songs WHERE name = $1 AND artist = $2",
@@ -69,12 +73,12 @@ func FindSong(db *sql.DB, song *song.Song) (int, error) {
 	return id, nil
 }
 
-func EditSong(db *sql.DB, song *song.Song, id int) {
+func (db *Postgres) EditSong(song *song.Song, id int) {
 	db.QueryRow("UPDATE songs SET name = $1, artist = $2, duration = $3 WHERE id = $4",
-		song.Name, song.Artist, song.Duration, id)
+		song.Name, song.Artist, song.Duration.Seconds(), id)
 }
 
-func DeleteSong(db *sql.DB, song *song.Song) error {
+func (db *Postgres) DeleteSong(song *song.Song) error {
 	result, err := db.Exec("DELETE FROM songs WHERE name = $1 AND artist = $2", song.Name, song.Artist)
 	if err != nil {
 		return err
