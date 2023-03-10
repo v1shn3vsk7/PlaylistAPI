@@ -16,71 +16,92 @@
 ```
 Порт: 5536
 ```
-### Начать воспроизведение:
-URL: `Play`
 
-Message запроса оставляем пустым
+Каждый метод возвращает Response. Responce представляет собой ответ от сервера
+```
+message Response {
+  string result = 1;
+} 
+```
+### Начать воспроизведение:
+gRPC метод `Play`
+```
+rpc Play(google.protobuf.Empty) returns(Response){}
+```
 
 ### Остановить воспроизведение:
-URL: `Pause`
+gRPC метод `Pause`
 
-Message запроса оставляем пустым
+```
+rpc Pause(google.protobuf.Empty) returns(Response){}
+```
 
 ### Следующая песня:
-URL: `Next`
+gRPC метод `Next`
 
-Message запроса оставляем пустым
+```
+rpc Next(google.protobuf.Empty) returns(Response){}
+```
 
 ### Предыдущая песня:
-URL: `Prev`
+gRPC метод `Prev`
 
-Message запроса оставляем пустым
+```
+rpc Prev(google.protobuf.Empty) returns(Response){}
+```
 
 ### Добавить песню:
-URL: `Add`
+gRPC: `Add`
 
-В теле запроса передаем название, исполнителя и длительность (в формате HH:MM:SS).
-
-Пример:
 ```
-{
-    "name": "Lose yourself",
-    "artist": "Eminem",
-    "duration": "00:04:30"
+rpc Add(AddRequest) returns(Response) {}
+```
+
+Длительность песни нужно указывать в секундах
+```
+message AddRequest {
+  string name     = 1;
+  string artist   = 2;
+  int32  duration = 3;
 }
 ```
 
 ### Редактировать песню:
-URL: `Edit`
+gRPC: `Edit`
 
-В теле запроса передаем название и исполнителя старой песни, а также название, исполнителя, длительность новой песни.
-
-Пример:
 ```
-{
-    "prev_name": "Lose yourself",
-    "prev_artist": "Eminem",
-    "new_name": "Moonlight Sonata",
-    "new_artist": "Beethoven",
-    "new_duration": "00:15:00"
+rpc Edit(EditRequest) returns(Response) {}
+```
+
+```
+message EditRequest {
+  string prev_name    = 1;
+  string prev_artist  = 2;
+  string new_name     = 3;
+  string new_artist   = 4;
+  int32  new_duration = 5;
 }
 ```
 
 ### Удалить песню:
-URL: `Delete`
+gRPC: `Delete`
 
-В теле запроса передаем название и исполнителя песни, которую нужно удалить.
-
-Пример:
 ```
-{
-    "name": "My Way",
-    "artist": "Frank Sinatra"
+rpc Delete(DeleteRequest) returns(Response) {}
+```
+
+```
+message DeleteRequest {
+  string name   = 1;
+  string artist = 2;
 }
 ```
 
 ### Текущее состояние плейлиста:
-URL: `Status`
+gRPC: `Status`
 
-Message запроса оставляем пустым
+```
+rpc Status(google.protobuf.Empty)  returns(Response)  {}
+```
+
 

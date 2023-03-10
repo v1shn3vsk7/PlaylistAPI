@@ -99,9 +99,7 @@ func (p *Playlist) Next() error {
 
 	p.mu.Unlock()
 
-	if err := p.Pause(); err != nil {
-		return err
-	}
+	p.Pause()
 
 	p.mu.Lock()
 

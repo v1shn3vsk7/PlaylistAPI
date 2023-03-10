@@ -42,19 +42,12 @@ func (db *MockDb) AddSong(song *song.Song) error {
 		return err
 	}
 
-	defer func() {
-		switch err {
-		case nil:
-			err = tx.Commit()
-		default:
-			tx.Rollback()
-		}
-	}()
-
 	if _, err := tx.Exec("INSERT INTO songs (name, artist, duration) VALUES ($1, $2, $3)",
 		song.Name, song.Artist, int64(song.Duration.Seconds())); err != nil {
 		return err
 	}
+
+	tx.Commit()
 
 	return nil
 }
@@ -67,19 +60,12 @@ func (db *MockDb) FindSong(song *song.Song) (int, error) {
 		return 0, err
 	}
 
-	defer func() {
-		switch err {
-		case nil:
-			err = tx.Commit()
-		default:
-			tx.Rollback()
-		}
-	}()
-
 	if _ = tx.QueryRow("SELECT id FROM songs WHERE name = $1 AND artist = $2",
 		song.Name, song.Artist).Scan(&id); id != 0 {
 		return 0, errors.New("Not found")
 	}
+
+	tx.Commit()
 
 	return id, nil
 }
@@ -91,10 +77,17 @@ func (db *MockDb) EditSong(song *song.Song, id int) {
 	}
 	_ = tx.QueryRow("UPDATE songs SET name = $1, artist = $2, duration = $3 WHERE id = $4",
 		song.Name, song.Artist, song.Duration.Seconds(), id)
+
+	tx.Commit()
 }
 
 func (db *MockDb) DeleteSong(song *song.Song) error {
-	result, err := db.Exec("DELETE FROM songs WHERE name = $1 AND artist = $2", song.Name, song.Artist)
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	result, err := tx.Exec("DELETE FROM songs WHERE name = $1 AND artist = $2", song.Name, song.Artist)
 	if err != nil {
 		return err
 	}
@@ -106,6 +99,8 @@ func (db *MockDb) DeleteSong(song *song.Song) error {
 	if rowsAffected == 0 {
 		return errors.New("song not found")
 	}
+
+	tx.Commit()
 
 	return nil
 }

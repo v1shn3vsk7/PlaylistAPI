@@ -85,9 +85,15 @@ func TestServer(t *testing.T) {
 		NewDuration: 500,
 	}
 
+	delReq := &pb.DeleteRequest{
+		Name:   "Song-2",
+		Artist: "Artist-2",
+	}
+
 	mock.ExpectBegin()
 	mock.ExpectExec("SELECT id FROM songs").WithArgs(editReq.PrevName, editReq.PrevArtist)
 	mock.ExpectExec("UPDATE songs").WithArgs(editReq.NewName, editReq.NewArtist, editReq.NewDuration)
+	mock.ExpectExec("DELETE FROM songs").WithArgs(delReq.Name, delReq.Artist).WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
 	_, err = client.Edit(context.Background(), editReq)
@@ -98,6 +104,16 @@ func TestServer(t *testing.T) {
 	_, err = client.Play(context.Background(), &emptypb.Empty{})
 	if err != nil {
 		t.Fatalf("Add() got unexpected error: %v", err)
+	}
+
+	_, err = client.Delete(context.Background(), delReq)
+	if err == nil {
+		t.Fatalf("Delete() was expected to get an error: %v", err)
+	}
+
+	_, err = client.Pause(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		t.Fatalf("Pause() got unexpected error: %v", err)
 	}
 
 }
