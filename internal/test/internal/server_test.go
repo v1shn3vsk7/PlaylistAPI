@@ -76,4 +76,28 @@ func TestServer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Pause() got unexpected error: %v", err)
 	}
+
+	editReq := &pb.EditRequest{
+		PrevName:    "Song-1",
+		PrevArtist:  "Artist-1",
+		NewName:     "Song-2",
+		NewArtist:   "Artist-2",
+		NewDuration: 500,
+	}
+
+	mock.ExpectBegin()
+	mock.ExpectExec("SELECT id FROM songs").WithArgs(editReq.PrevName, editReq.PrevArtist)
+	mock.ExpectExec("UPDATE songs").WithArgs(editReq.NewName, editReq.NewArtist, editReq.NewDuration)
+	mock.ExpectCommit()
+
+	_, err = client.Edit(context.Background(), editReq)
+	if err != nil {
+		t.Fatalf("Edit() got unexpected error: %v", err)
+	}
+
+	_, err = client.Play(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		t.Fatalf("Add() got unexpected error: %v", err)
+	}
+
 }

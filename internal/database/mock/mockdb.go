@@ -62,16 +62,34 @@ func (db *MockDb) AddSong(song *song.Song) error {
 func (db *MockDb) FindSong(song *song.Song) (int, error) {
 	var id int
 
-	if err := db.QueryRow("SELECT id FROM songs WHERE name = $1 AND artist = $2",
-		song.Name, song.Artist).Scan(&id); err != nil {
-		return 0, nil
+	tx, err := db.Begin()
+	if err != nil {
+		return 0, err
+	}
+
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	if _ = tx.QueryRow("SELECT id FROM songs WHERE name = $1 AND artist = $2",
+		song.Name, song.Artist).Scan(&id); id != 0 {
+		return 0, errors.New("Not found")
 	}
 
 	return id, nil
 }
 
 func (db *MockDb) EditSong(song *song.Song, id int) {
-	db.QueryRow("UPDATE songs SET name = $1, artist = $2, duration = $3 WHERE id = $4",
+	tx, err := db.Begin()
+	if err != nil {
+		return
+	}
+	_ = tx.QueryRow("UPDATE songs SET name = $1, artist = $2, duration = $3 WHERE id = $4",
 		song.Name, song.Artist, song.Duration.Seconds(), id)
 }
 
