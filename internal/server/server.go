@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"github.com/v1shn3vsk7/PlaylistAPI/internal/database"
 	"github.com/v1shn3vsk7/PlaylistAPI/internal/database/postgres"
 	pb "github.com/v1shn3vsk7/PlaylistAPI/internal/server/grpc/proto"
 	"github.com/v1shn3vsk7/PlaylistAPI/pkg/playlist"
@@ -19,12 +20,12 @@ import (
 
 type Server struct {
 	playlist *playlist.Playlist
-	db       *postgres.Postgres
+	db       database.Database
 	server   *grpc.Server
 	pb.UnimplementedPlayerServer
 }
 
-func NewServer(playlist *playlist.Playlist, server *grpc.Server, db *postgres.Postgres) *Server {
+func NewServer(playlist *playlist.Playlist, server *grpc.Server, db database.Database) *Server {
 	return &Server{
 		playlist: playlist,
 		server:   server,
