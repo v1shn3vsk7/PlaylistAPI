@@ -37,11 +37,22 @@ func (db *MockDb) GetSongs() ([]*song.Song, error) {
 }
 
 func (db *MockDb) AddSong(song *song.Song) error {
-	if db == nil {
-		return errors.New("db connections is nil")
+	tx, err := db.Begin()
+	if err != nil {
+		return err
 	}
-	if _, err := db.Query("INSERT INTO songs (name, artist, duration) VALUES ($1, $2, $3)",
-		song.Name, song.Artist, song.Duration.Seconds()); err != nil {
+
+	defer func() {
+		switch err {
+		case nil:
+			err = tx.Commit()
+		default:
+			tx.Rollback()
+		}
+	}()
+
+	if _, err := tx.Exec("INSERT INTO songs (name, artist, duration) VALUES ($1, $2, $3)",
+		song.Name, song.Artist, int64(song.Duration.Seconds())); err != nil {
 		return err
 	}
 

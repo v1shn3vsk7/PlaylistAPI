@@ -51,9 +51,6 @@ func (db *Postgres) GetSongs() ([]*song.Song, error) {
 }
 
 func (db *Postgres) AddSong(song *song.Song) error {
-	if db == nil {
-		return errors.New("db connections is nil")
-	}
 	if _, err := db.Query("INSERT INTO songs (name, artist, duration) VALUES ($1, $2, $3)",
 		song.Name, song.Artist, song.Duration.Seconds()); err != nil {
 		return err
